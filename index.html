@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web App MongoDB Integration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #333;
+      color: white;
+      padding: 1em;
+      text-align: center;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #555;
+    }
+
+    nav button {
+      padding: 10px 20px;
+      border: none;
+      background: none;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    nav button:hover, nav button.active {
+      background-color: #007bff;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 2em;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    form {
+      background: white;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    button[type="submit"] {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 1em;
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .user-details {
+      background: #fff;
+      padding: 1em;
+      border-radius: 6px;
+      max-width: 600px;
+      margin: 1em auto;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-details img {
+      max-width: 150px;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto 1em;
+    }
+
+    .user-details p {
+      margin: 0.4em 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>User Registration</h1>
+  </header>
+
+  <nav>
+    <button class="tab-button active" onclick="showTab('home')">Home</button>
+    <button class="tab-button" onclick="showTab('register')">Registration</button>
+    <button class="tab-button" onclick="showTab('login')">Login</button>
+  </nav>
+
+  <div id="home" class="tab-content active">
+    <h2 style="text-align:center;">Welcome to the Web App</h2>
+    <p style="text-align:center;">Use the tabs to register, log in, and view details.</p>
+  </div>
+
+  <div id="register" class="tab-content">
+    <form id="registerForm">
+      <h2>Register</h2>
+      <input type="text" name="firstname" placeholder="First Name" required />
+      <input type="text" name="lastname" placeholder="Last Name" required />
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <input type="date" name="dob" required />
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="tel" name="phone" placeholder="Phone" required />
+      <select name="gender" required>
+        <option value="">Select Gender</option>
+        <option>Male</option>
+        <option>Female</option>
+        <option>Other</option>
+      </select>
+      <textarea name="qualifications" placeholder="Qualifications" required></textarea>
+      <input type="file" name="image" accept="image/*" />
+      <button type="submit">Register</button>
+      <div class="message" id="registerMessage"></div>
+    </form>
+  </div>
+
+  <div id="login" class="tab-content">
+    <form id="loginForm">
+      <h2>Login</h2>
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+      <div class="message" id="loginMessage"></div>
+    </form>
+    <div id="userDetails" class="user-details" style="display: none;"></div>
+  </div>
+
+  <script>
+    function showTab(id) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/signup', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById('registerMessage').textContent = data.message;
+      document.getElementById('registerMessage').classList.toggle('error', !res.ok);
+      if (res.ok) e.target.reset();
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const body = Object.fromEntries(new FormData(e.target).entries());
+      const res = await fetch('/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      const msgEl = document.getElementById('loginMessage');
+      msgEl.textContent = data.message;
+      msgEl.classList.toggle('error', !res.ok);
+      if (res.ok) {
+        const user = data.user;
+        const details = `
+          <img src="${user.image || ''}" alt="User Image" />
+          <p><strong>Name:</strong> ${user.firstname} ${user.lastname}</p>
+          <p><strong>Username:</strong> ${user.username}</p>
+          <p><strong>DOB:</strong> ${user.dob}</p>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Phone:</strong> ${user.phone}</p>
+          <p><strong>Gender:</strong> ${user.gender}</p>
+          <p><strong>Qualifications:</strong> ${user.qualifications}</p>
+        `;
+        const detailBox = document.getElementById('userDetails');
+        detailBox.innerHTML = details;
+        detailBox.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
